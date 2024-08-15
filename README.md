@@ -13,7 +13,7 @@ DLBiases:Mitigating Influence of Selection and Conformity Biases for User Intere
 
 
 # How to run our method?
-You can run our method by running the file in the format of [dataset]-[mf/cdae]-[bias].py
+You can run our method by running the file in the format of [dataset]-[mf]-[bias].py
 
 
 
