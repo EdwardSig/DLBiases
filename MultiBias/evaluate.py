@@ -93,9 +93,7 @@ class ImplicitTestManager:
         print(rating_matrix.shape)
 
         mask_users, mask_items = [], []
-        """
-        这一步也许可以优化，如果test时间过长，就优化一波
-        """
+
         for idx, user_id in enumerate(batch_users_list):
             mask_items_set = self.data_loader.user_mask_items(user_id)
             mask_users += [idx] * len(mask_items_set)
@@ -104,9 +102,7 @@ class ImplicitTestManager:
 
         if self.use_item_pool:
             high_light_users, high_light_items = [], []
-            """
-            这一步也许可以优化，如果test时间过长，就优化一波
-            """
+
             for idx, user_id in enumerate(batch_users_list):
                 high_light_items_set = self.data_loader.user_highlight_items(
                     user_id)
@@ -114,12 +110,9 @@ class ImplicitTestManager:
                 high_light_items += list(high_light_items_set)
             rating_matrix[high_light_users, high_light_items] = -(1 << 10)
 
-        # print(rating_matrix.shape)
         _, predict_items = torch.topk(rating_matrix, k=max(self.top_k_list))
         predict_items: np.array = predict_items.cpu().numpy()
-        # print(predict_items)
-        # print(type(predict_items))
-        # print(type(predict_items[0]))
+
         predict_items_list: list = predict_items.tolist()
 
         r = get_label(batch_users_ground_truth, predict_items_list)

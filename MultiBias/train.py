@@ -1626,11 +1626,11 @@ class ExplicitTrainManager:
         self.items_tensor: torch.Tensor = training_data[:, 1]
         self.scores_tensor: torch.Tensor = training_data[:, 2].float()
         self.user_positive_interaction = evaluator.data_loader.user_positive_interaction
-        self.pop_envs: torch.LongTensor = pop_env_label  # 用于流行度偏差环境训练
+        self.pop_envs: torch.LongTensor = pop_env_label  # Used for consistency deviation environment training
         self.pop_envs = self.pop_envs.to(device)
-        self.con_envs: torch.LongTensor = con_env_label  # 用于一致性偏差环境训练
+        self.con_envs: torch.LongTensor = con_env_label  # For selection bias environment training
         self.con_envs = self.con_envs.to(device)
-        self.env_classifier: torch.Tensor = env_classifier  # 用于多标签识别
+        self.env_classifier: torch.Tensor = env_classifier  # Used for multi-label identification
         self.env_classifier = self.env_classifier.to(device)
         self.cluster_interval: int = cluster_interval
         self.evaluate_interval: int = evaluate_interval
@@ -1676,14 +1676,9 @@ class ExplicitTrainManager:
 
         self.const_env_tensor_list: list = []
 
-        # 为每个batch创建相关的purchase_vec
         item_num = evaluator.data_loader.item_num
 
-        # for env in range(self.envs_num):
-        #     envs_tensor: torch.Tensor = torch.LongTensor(np.full(training_data.shape[0], env, dtype=int))
-        #     envs_tensor = envs_tensor.to(self.device)
-        #     self.const_env_tensor_list.append(envs_tensor)
-        self.const_env_tensor_list = []  # TODO: 用损失改变标签, 上面的for循环暂时停止，测试模型是否用到了利用损失改变标签的部分
+        self.const_env_tensor_list = []
 
     def _init_eps(self):
         base_eps = 1e-10
@@ -1706,8 +1701,6 @@ class ExplicitTrainManager:
             batch_index: int
     ) -> dict:
 
-        # 获取不变兴趣特征预测的分数, 可变特征预测的分数, 环境分类器预测的分类结构
-        # TODO: 修改
         mf_score, env_aware_score, env_outputs = self.model(
             batch_users_tensor, batch_items_tensor,
             batch_pop_envs_tensor, batch_con_envs_tensor, alpha)
@@ -1750,39 +1743,25 @@ class ExplicitTrainManager:
             batch_items_tensor: torch.Tensor,
             batch_scores_tensor: torch.Tensor,
     ) -> torch.Tensor:
-        # 此时应该是eval()\
         distances_list: list = []
         for env_idx in range(self.envs_num):
-            # const_env_tensor_list存放的是环境的标签，标签数据包含训练集中所有的数据
             envs_tensor: torch.Tensor = self.const_env_tensor_list[env_idx][0:batch_users_tensor.shape[0]]
-            # print('envs_tensor:', envs_tensor.shape, envs_tensor)
 
-            # 返回一个环境识别的得分
             cluster_pred: torch.Tensor = self.model.cluster_predict(batch_users_tensor, batch_items_tensor, envs_tensor)
-            # print('cluster_pred:', cluster_pred)
 
-            # 计算当前的环境的评分和真实评分之间的距离
             distances: torch.Tensor = self.cluster_distance_func(cluster_pred, batch_scores_tensor)
-            # print('distances:', distances)
 
             distances = distances.reshape(-1, 1)
-            # print('distances reshape:', distances)
             distances_list.append(distances)
 
-        # [samples_num, envs_num]
         each_envs_distances: torch.Tensor = torch.cat(distances_list, dim=1)
-        # print('each_envs_distances:', each_envs_distances)
-        # [samples_num]
         if self.cluster_use_random_sort:
             sort_random_index: np.array = \
                 np.random.randint(0, self.eps_random_tensor.shape[0], each_envs_distances.shape[0])
             # random_eps可能代表随机扰动
             random_eps: torch.Tensor = self.eps_random_tensor[sort_random_index]
             each_envs_distances = each_envs_distances + random_eps
-        # print('pes_each_envs_distances:', each_envs_distances)
-        # print('random_eps:', random_eps)
         new_envs: torch.Tensor = torch.argmin(each_envs_distances, dim=1)
-        # print('new_envs:', new_envs)
 
         return new_envs
 
@@ -1790,14 +1769,13 @@ class ExplicitTrainManager:
         self.model.train()
         loss_dicts_list: list = []
 
-        # batch_scores_tensor/scores_tensor表示训练集中用户评分，评分包含0和1
         for (batch_index, (
                 batch_users_tensor, batch_items_tensor, batch_scores_tensor,
                 batch_pop_envs_tensor, batch_con_envs_tensor, batch_env_classifier, batch_sample_weights
         )) \
                 in enumerate(mini_batch(self.batch_size, self.users_tensor, self.items_tensor,
                                         self.scores_tensor, self.pop_envs, self.con_envs,
-                                        self.env_classifier, self.sample_weights)):  # TODO: 修改
+                                        self.env_classifier, self.sample_weights)):
 
             if self.update_alpha:
                 p = float(batch_index + (self.epoch_cnt + 1) * self.batch_num) / float((self.epoch_cnt + 1)
@@ -1825,7 +1803,6 @@ class ExplicitTrainManager:
 
     def cluster(self) -> int:
         """
-        转换环境标签
         """
         self.model.eval()
 
@@ -1839,13 +1816,11 @@ class ExplicitTrainManager:
                 batch_scores_tensor=batch_scores_tensor
             )
 
-            # print(new_env_tensor.shape)
             new_env_tensors_list.append(new_env_tensor)
 
         all_new_env_tensors: torch.Tensor = torch.cat(new_env_tensors_list, dim=0)
-        # print()
-        # print(all_new_env_tensors.shape)
-        envs_diff: torch.Tensor = (self.envs - all_new_env_tensors) != 0  # TODO: 修改
+
+        envs_diff: torch.Tensor = (self.envs - all_new_env_tensors) != 0
         diff_num: int = int(torch.sum(envs_diff))
         self.envs = all_new_env_tensors
         return diff_num
@@ -1853,26 +1828,24 @@ class ExplicitTrainManager:
     def update_each_env_count(self):
         result_dict: dict = {}
         for env in range(self.envs_num):
-            cnt = torch.sum(self.envs == env)  # TODO: 修改
+            cnt = torch.sum(self.envs == env)
             result_dict[env] = cnt
         self.each_env_count.update(result_dict)
 
     def stat_envs(self) -> dict:
         """
-        看当前数据集中属于某个环境的数据有多少个
         @return:
         """
         result: dict = dict()
         class_rate_np: np.array = np.zeros(self.envs_num)
         for env in range(self.envs_num):
-            cnt: int = int(torch.sum(self.envs == env))  # TODO: 修改
+            cnt: int = int(torch.sum(self.envs == env))
             result[env] = cnt
             class_rate_np[env] = min(cnt + 1, self.scores_tensor.shape[0] - 1)
 
         class_rate_np = class_rate_np / self.scores_tensor.shape[0]
         self.class_weights = torch.Tensor(class_rate_np).to(self.device)
-        # TODO: 修改
-        self.sample_weights = self.class_weights[self.envs]  # 采样权重，其权重数值由class_rate_np得来
+        self.sample_weights = self.class_weights[self.envs]
 
         return result
 
@@ -1881,7 +1854,7 @@ class ExplicitTrainManager:
 
         @param silent:
         @param auto:
-        @return: (epoch中各损失值, 当前是第几个epoch), (当前测试指标, 当前是第几个epoch), (聚类后环境标签改变的数据有多少个, 每个环境有多少个数据, 当前是第几个epoch)
+        @return:
         """
         print(Fore.GREEN)
         print('=' * 30, 'train started!!!', '=' * 30)
@@ -1911,7 +1884,7 @@ class ExplicitTrainManager:
             print(transfer_loss_dict_to_line_str(temp_eval_result))
 
         while self.epoch_cnt < self.epochs:
-            # 训练数据, 在该方法中存在模型训练的信息
+            # Training data, in which there is model training information
             temp_loss_dict = self.train_a_epoch()
             train_epoch_index_list.append(self.epoch_cnt)
             loss_result_list.append(temp_loss_dict)

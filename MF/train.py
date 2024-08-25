@@ -422,7 +422,6 @@ class ExplicitTrainManager:
         self.users_tensor: torch.Tensor = training_data[:, 0]
         self.items_tensor: torch.Tensor = training_data[:, 1]
         self.scores_tensor: torch.Tensor = training_data[:, 2].float()
-        # TODO: 修改
         # self.user_positive_interaction = evaluator.data_loader.user_positive_interaction
         self.envs: torch.LongTensor = env_label
         self.envs = self.envs.to(device)
@@ -468,13 +467,6 @@ class ExplicitTrainManager:
 
         self.cluster_use_random_sort: bool = cluster_use_random_sort
 
-        # self.const_env_tensor_list: list = []
-        #
-        # for env in range(self.envs_num):
-        #     envs_tensor: torch.Tensor = torch.LongTensor(np.full(training_data.shape[0], env, dtype=int))
-        #     envs_tensor = envs_tensor.to(self.device)
-        #     self.const_env_tensor_list.append(envs_tensor)
-
     def _init_eps(self):
         base_eps = 1e-10
         eps_list: list = [base_eps * (1e-1 ** idx) for idx in range(self.envs_num)]
@@ -493,10 +485,6 @@ class ExplicitTrainManager:
             alpha
     ) -> dict:
 
-        # print('embed_env_GMF:', self.model.embed_env_GMF.weight)
-        # print('batch_envs_tensor:', batch_envs_tensor)
-
-        # print()
         mf_score, env_aware_score, env_outputs = self.model(
             batch_users_tensor, batch_items_tensor, batch_envs_tensor, alpha
         )
@@ -556,7 +544,7 @@ class ExplicitTrainManager:
             batch_items_tensor: torch.Tensor,
             batch_scores_tensor: torch.Tensor,
     ) -> torch.Tensor:
-        # 此时应该是eval()\
+
         distances_list: list = []
         for env_idx in range(self.envs_num):
             envs_tensor: torch.Tensor = self.const_env_tensor_list[env_idx][0:batch_users_tensor.shape[0]]
@@ -668,7 +656,7 @@ class ExplicitTrainManager:
 
         @param silent:
         @param auto:
-        @return: (epoch中各损失值, 当前是第几个epoch), (当前测试指标, 当前是第几个epoch), (聚类后环境标签改变的数据有多少个, 每个环境有多少个数据, 当前是第几个epoch)
+        @return:
         """
         print(Fore.GREEN)
         print('=' * 30, 'train started!!!', '=' * 30)
@@ -696,7 +684,7 @@ class ExplicitTrainManager:
             print(transfer_loss_dict_to_line_str(temp_eval_result))
 
         while self.epoch_cnt < self.epochs:
-            # 训练数据, 在该方法中存在模型训练的信息
+            # Training data, in which there is model training information
             temp_loss_dict = self.train_a_epoch()
             train_epoch_index_list.append(self.epoch_cnt)
             loss_result_list.append(temp_loss_dict)
@@ -735,25 +723,20 @@ class ExplicitTrainManagerNone:
     ):
         self.model: MFExplicit = model
         self.evaluator: ExplicitTestManager = evaluator
-        # self.envs_num: int = self.model.env_num
         self.device: torch.device = device
         self.users_tensor: torch.Tensor = training_data[:, 0]
         self.items_tensor: torch.Tensor = training_data[:, 1]
         self.scores_tensor: torch.Tensor = training_data[:, 2].float()
-        # self.envs: torch.LongTensor = torch.LongTensor(np.random.randint(0, self.envs_num, training_data.shape[0]))
-        # self.envs = self.envs.to(device)
-        # self.cluster_interval: int = cluster_interval
+
         self.evaluate_interval: int = evaluate_interval
         self.batch_size: int = batch_size
         self.epochs: int = epochs
         self.optimizer: torch.optim.Adam = torch.optim.Adam(model.parameters(), lr=lr)
         self.recommend_loss_type = nn.MSELoss
         self.cluster_distance_func = nn.MSELoss(reduction='none')
-        # self.env_loss_type = nn.NLLLoss
 
         self.invariant_coe = invariant_coe
-        # self.env_aware_coe = env_aware_coe
-        # self.env_coe = env_coe
+
         self.L2_coe = L2_coe
         self.L1_coe = L1_coe
 
@@ -769,11 +752,6 @@ class ExplicitTrainManagerNone:
         else:
             self.alpha = alpha
             self.update_alpha = False
-
-        # self.use_class_re_weight: bool = use_class_re_weight
-        # self.use_recommend_re_weight: bool = use_recommend_re_weight
-        # self.sample_weights: torch.Tensor = torch.Tensor(np.zeros(training_data.shape[0])).to(device)
-        # self.class_weights: torch.Tensor = torch.Tensor(np.zeros(self.envs_num)).to(device)
 
         self.test_begin_epoch: int = test_begin_epoch
 
@@ -793,16 +771,9 @@ class ExplicitTrainManagerNone:
             alpha
     ) -> dict:
 
-        # print('embed_env_GMF:', self.model.embed_env_GMF.weight)
-        # print('batch_envs_tensor:', batch_envs_tensor)
-
-        # print()
         predict_score = self.model(
             batch_users_tensor, batch_items_tensor)
 
-        # if self.use_recommend_re_weight:
-        #     recommend_loss = self.recommend_loss_type(reduction='none')
-        # else:
         recommend_loss = self.recommend_loss_type()
 
         score_loss: torch.Tensor = recommend_loss(predict_score, batch_scores_tensor)
@@ -835,7 +806,7 @@ class ExplicitTrainManagerNone:
             batch_items_tensor: torch.Tensor,
             batch_scores_tensor: torch.Tensor,
     ) -> torch.Tensor:
-        # 此时应该是eval()\
+
         distances_list: list = []
         for env_idx in range(self.envs_num):
             envs_tensor: torch.Tensor = self.const_env_tensor_list[env_idx][0:batch_users_tensor.shape[0]]

@@ -217,9 +217,7 @@ class ExplicitTestManager:
         rating_matrix: torch.Tensor = self.model.predict(batch_users_tensor)
 
         mask_users, mask_items = [], []
-        """
-        这一步也许可以优化，如果test时间过长，就优化一波
-        """
+
         for idx, user_id in enumerate(batch_users_list):
             mask_items_set = self.data_loader.user_mask_items(user_id)
             mask_users += [idx] * len(mask_items_set)
@@ -228,9 +226,7 @@ class ExplicitTestManager:
 
         if self.use_item_pool:
             high_light_users, high_light_items = [], []
-            """
-            这一步也许可以优化，如果test时间过长，就优化一波
-            """
+
             for idx, user_id in enumerate(batch_users_list):
                 high_light_items_set = self.data_loader.user_highlight_items(
                     user_id)

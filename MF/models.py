@@ -1019,12 +1019,12 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         self.user_embedding = nn.Embedding(user_num+1, factor_num)
         self.item_embedding = nn.Embedding(item_num+1, factor_num)
 
-        # 环境识别隐向量
+        # Bias implicit vector
         self.embed_user_env_aware = nn.Embedding(user_num, factor_num)
         self.embed_item_env_aware = nn.Embedding(item_num, factor_num)
         self.env2hidden = nn.Embedding(env_num, factor_num)
 
-        # 环境分类器
+        # Bias classifier
         self.env_classifier: EnvClassifier = LinearLogSoftMaxEnvClassifier(
             factor_num, env_num)
         self.output_func = nn.ReLU()
@@ -1053,7 +1053,7 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         mf_score = self.output_func(torch.sum(user_emb * item_emb * envs_embed, dim=1))
 
         ###############################################
-        # 环境因子/偏差因子识别
+        # Bias factor identification
         ###############################################
         users_embed_env_aware: torch.Tensor = self.embed_user_env_aware(
             users_id)

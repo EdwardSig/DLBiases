@@ -940,46 +940,39 @@ class MLImplicitBCELossDataLoaderThreeBiases(BaseImplicitBCELossDataLoader):
 class MLExplicitDataLoader(BaseExplicitDataLoader):
     def __init__(self, dataset_path: str, file_name: tuple, device: torch.device, has_item_pool_file: bool = False):
         super(MLExplicitDataLoader, self).__init__(dataset_path)
-        # 训练集和测试集文件路径
+
         self.train_data_path: str = os.path.join(self.dataset_path, file_name[0])
         self.test_data_path: str = os.path.join(self.dataset_path, file_name[1])
 
-        # DataFrame格式的训练集和测试集的数据
         self.train_df: pd.DataFrame = pd.read_csv(self.train_data_path)  # [0: 100000]
         self.test_df: pd.DataFrame = pd.read_csv(self.test_data_path)
 
-        # numpy格式的训练集和测试集的数据
         self._train_data: np.array = self.train_df.iloc[:, 0: 3].values.astype(np.int64)
         self._test_data: np.array = self.test_df.iloc[:, 0: 3].values.astype(np.int64)
 
-        self.user_positive_interaction = []  # 用户正样本交互
-        self.user_list: list = []  # 用户ID列表
-        self.item_list: list = []  # 项目ID列表
+        self.user_positive_interaction = []
+        self.user_list: list = []
+        self.item_list: list = []
 
-        self._user_num = 0  # 用户的数量
-        self._item_num = 0  # 项目的数量
+        self._user_num = 0
+        self._item_num = 0
 
-        self.test_user_list: list = []  # 测试集中用户ID列表
-        self.test_item_list: list = []  # 测试集中项目ID列表
-        self.ground_truth: list = []  # TODO
+        self.test_user_list: list = []
+        self.test_item_list: list = []
+        self.ground_truth: list = []
 
-        self.has_item_pool: bool = has_item_pool_file  # TODO
+        self.has_item_pool: bool = has_item_pool_file
 
+        # load train dataset
         with open(self.train_data_path, 'r') as inp:
             inp.readline()
             lines: list = inp.readlines()
 
             print('Begin analyze raw train file')
-            # 获取训练集中的用户打分数据
-            # 将每行打分数据变成一个元组pairs，
-            # 获取训练集中用户的ID列表user_list,
-            # 获取测试集中项目ID列表item_list
             pairs, self.user_list, self.item_list = analyse_interaction_from_text(lines, has_value=True)
 
-            # 获取训练集中用户正反馈的打分数据
             positive_pairs: list = list(filter(lambda pair: pair[2] >= 0, pairs))
 
-            # 获取一个列表，这个列表中的元素是集合，集合存放的是相关用户正反馈的项目
             user_positive_interaction: list = analyse_user_interacted_set(positive_pairs)
             self.user_positive_interaction = user_positive_interaction
 
@@ -987,21 +980,17 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
 
             inp.close()
 
+        # load test dataset
         with open(self.test_data_path, 'r') as inp:
             inp.readline()
             lines: list = inp.readlines()
             print('Begin analyze raw test file')
-            # 获取测试集中的用户打分数据
-            # 将每行打分数据变成一个元组pairs，
-            # 获取测试集中用户的ID列表test_user_list,
-            # 获取测试集中项目ID列表test_item_list
+
             pairs, self.test_user_list, self.test_item_list = analyse_interaction_from_text(lines)
-            # print(self.test_user_list)
-            # 获取一个列表，这个列表中的元素是集合，集合存放的是测试集中相关用户正反馈的项目
+
             self.ground_truth: list = analyse_user_interacted_set(pairs)
             inp.close()
 
-        # TODO: item池？干嘛用的？
         if self.has_item_pool:
             self.item_pool_path: str = self.dataset_path + '/test_item_pool.csv'
             with open(self.item_pool_path, 'r') as inp:
@@ -1013,8 +1002,8 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
                 self.item_pool: list = analyse_user_interacted_set(pairs)
                 inp.close()
 
-        self._user_num = max(self.user_list + self.test_user_list) + 1  # 总的用户数
-        self._item_num = max(self.item_list + self.test_item_list) + 1  # 总的项目数
+        self._user_num = max(self.user_list + self.test_user_list) + 1
+        self._item_num = max(self.item_list + self.test_item_list) + 1
 
         self.users_tensor: torch.LongTensor = torch.LongTensor(self.user_list)
         self.users_tensor = self.users_tensor.to(device)
@@ -1024,20 +1013,19 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
         self.sorted_ground_truth: list = [self.get_user_ground_truth(user_id) for user_id in self.test_user_list]
 
     def user_mask_items(self, user_id: int) -> set:
-        """获取用户ID为user_id的用户在训练集中曾今打分过的项目
+        """Gets the items that the user with user ID user_id has scored in the training set
 
         Args:
-            user_id (int): 用户ID
+            user_id (int): user ID
 
         Returns:
-            set: 物品集合
+            set: item sets
         """
         return self.user_positive_interaction[user_id]
 
     @property
     def all_train_users_by_sorted_tensor(self) -> torch.Tensor:
         """
-        注意，这个tensor没有指明device
         :return:
         """
         return self.users_tensor
@@ -1054,7 +1042,6 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
     @property
     def all_test_users_by_sorted_tensor(self) -> torch.Tensor:
         """
-        注意，这个tensor没有指明device
         :return:
         """
         return self.test_users_tensor
@@ -1064,7 +1051,7 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
         return self.test_user_list
 
     def get_user_ground_truth(self, user_id: int) -> set:
-        """获取用户ID为user_id的用户，在测试集中真实的物品选择列表
+        """Gets a list of real item selections in the test set for the user whose user ID is user_id
 
         Args:
             user_id (int): 用户ID
@@ -1076,7 +1063,7 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
 
     @property
     def get_sorted_all_test_users_ground_truth(self) -> list:
-        """获取当前数据集所有用户在测试集中真实的物品选择列表
+        """Gets a list of real item selections in the test set for all users of the current dataset
 
         Returns:
             list: _description_
@@ -1085,7 +1072,7 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
 
     @property
     def get_sorted_all_train_users_positive_interaction(self) -> list:
-        """获取当前数据集所有用户在训练集中真实的物品选择列表
+        """Gets a list of actual item selections from the training set for all users of the current dataset
 
         Returns:
             list: _description_

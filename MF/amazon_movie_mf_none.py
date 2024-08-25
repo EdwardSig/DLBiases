@@ -12,6 +12,7 @@ from utils import merge_dict, _show_me_a_list_func, _mean_merge_dict_func, show_
 
 DEVICE: torch.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+# model parameter
 MODEL_CONFIG: dict = {
     'env_num': 2,
     'factor_num': 16,
@@ -19,6 +20,7 @@ MODEL_CONFIG: dict = {
     'drop_rate': 0.3
 }
 
+# training parameter
 TRAIN_CONFIG: dict = {
     "batch_size": 512,
     "epochs": 300,
@@ -38,6 +40,7 @@ TRAIN_CONFIG: dict = {
     "stop_cluster_epoch": None
 }
 
+# testing metrics
 EVALUATE_CONFIG: dict = {
     'top_k_list': [20, 50],
     'test_batch_size': 1024,
@@ -66,6 +69,7 @@ def main(
     torch.cuda.manual_seed_all(random_seed)
     np.random.seed(random_seed)
 
+    # method
     model: MFExplicit = MFExplicit(
         user_num=data_loader.user_num,
         item_num=data_loader.item_num,
@@ -86,6 +90,7 @@ def main(
         'items_tensor': test_tensor[:, 1],
     }
 
+    # This class is used to test method performance
     evaluator: ExplicitTestManager = ExplicitTestManager(
         model=model,
         data_loader=data_loader,
@@ -94,6 +99,7 @@ def main(
         top_k_list=evaluate_config['top_k_list'],
         use_item_pool=False)
 
+    # This class is used to control training of models
     train_manager: ExplicitTrainManagerNone = ExplicitTrainManagerNone(
         model=model,
         evaluator=evaluator,
