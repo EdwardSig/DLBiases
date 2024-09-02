@@ -71,6 +71,7 @@ def main(
     torch.cuda.manual_seed_all(random_seed)
     np.random.seed(random_seed)
 
+    # method
     model: BiasFactMFExplicit = BiasFactMFExplicit(
         user_num=data_loader.user_num,
         item_num=data_loader.item_num,

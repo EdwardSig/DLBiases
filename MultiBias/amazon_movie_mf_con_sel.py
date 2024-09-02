@@ -8,8 +8,7 @@ from dataloader import BaseImplicitBCELossDataLoader, MLImplicitBCELossDataLoade
 from evaluate import ImplicitTestManager
 from models import BiasFactMFExplicit
 from train import ExplicitTrainManager
-from utils import merge_dict, _show_me_a_list_func, query_user, query_str, mkdir, query_int, get_class_name_str, \
-    _mean_merge_dict_func, show_me_all_the_fucking_result
+from utils import merge_dict, _show_me_a_list_func, _mean_merge_dict_func, show_me_all_the_fucking_result
 
 DEVICE: torch.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
