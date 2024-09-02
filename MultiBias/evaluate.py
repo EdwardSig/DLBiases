@@ -141,6 +141,7 @@ class ImplicitTestManager:
             return (np.sum(np.array(elements_list), axis=0) /
                     float(user_num)).tolist()
 
+        # load data of test set
         all_test_user_tensor: torch.Tensor = self.data_loader.all_test_users_by_sorted_tensor
         all_test_user_list: list = self.data_loader.all_test_users_by_sorted_list
         all_test_ground_truth: list = self.data_loader.get_sorted_all_test_users_ground_truth
@@ -191,6 +192,7 @@ class ExplicitTestManager:
     def evaluate(self) -> dict:
         self.model.eval()
 
+        # load data of test set
         test_pairs: torch.Tensor = self.data_loader.all_test_pairs_tensor
         test_users: torch.Tensor = test_pairs[:, 0].reshape(-1)
         test_items: torch.Tensor = test_pairs[:, 1].reshape(-1)

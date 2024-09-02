@@ -31,7 +31,7 @@ class ExplicitTrainManager:
         self.items_tensor: torch.Tensor = training_data[:, 1]
         self.scores_tensor: torch.Tensor = training_data[:, 2].float()
         self.user_positive_interaction = evaluator.data_loader.user_positive_interaction
-        self.pop_envs: torch.LongTensor = pop_env_label  # Used for consistency deviation environment training
+        self.pop_envs: torch.LongTensor = pop_env_label  # Used for consistency bias environment training
         self.pop_envs = self.pop_envs.to(device)
         self.con_envs: torch.LongTensor = con_env_label  # For selection bias environment training
         self.con_envs = self.con_envs.to(device)
@@ -106,6 +106,7 @@ class ExplicitTrainManager:
             batch_index: int
     ) -> dict:
 
+        # output of DLBias
         mf_score, env_aware_score, env_outputs = self.model(
             batch_users_tensor, batch_items_tensor,
             batch_pop_envs_tensor, batch_con_envs_tensor, alpha)

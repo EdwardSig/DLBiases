@@ -153,13 +153,13 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         self.user_embedding = nn.Embedding(user_num, factor_num)
         self.item_embedding = nn.Embedding(item_num, factor_num)
 
-        # 环境识别隐向量
+        # Bias environment identification implicit vector
         self.embed_user_env_aware = nn.Embedding(user_num, factor_num)
         self.embed_item_env_aware = nn.Embedding(item_num, factor_num)
         self.pop_env2hidden = nn.Embedding(pop_env_num, factor_num)
         self.con_env2hidden = nn.Embedding(con_env_num, factor_num)
 
-        # 环境分类器
+        # Bias classifier
         self.env_classifier: EnvClassifier = LinearLogSoftMaxEnvClassifier(
             factor_num, pop_env_num+con_env_num)
         self.output_func = nn.ReLU()
@@ -171,6 +171,7 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         self._init_weight()
 
     def _init_weight(self):
+        # Initialize parameter
         nn.init.normal_(self.user_embedding.weight, std=0.01)
         nn.init.normal_(self.item_embedding.weight, std=0.01)
         nn.init.normal_(self.embed_user_env_aware.weight, std=0.01)
@@ -192,7 +193,7 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         mf_score = self.output_func(torch.sum(user_emb * item_emb * envs_embed, dim=1))
 
         ###############################################
-        # 环境因子/偏差因子识别
+        # Bias factor identification
         ###############################################
         users_embed_env_aware: torch.Tensor = self.embed_user_env_aware(
             users_id)
@@ -286,16 +287,6 @@ class BiasFactMFExplicit(GeneralDebiasExplicitRecommender):
         return result
 
     def predict(self, users_id, item_id=None):
-        # user_list, item_list = [], []
-        # for i in range(0, len(users_id)):
-        #     user_list.extend([users_id[i].item()] * self.item_num)
-        #     item_list.extend([iid for iid in range(1, self.item_num + 1)])
-        #
-        # predict_users_id = torch.IntTensor(user_list)
-        # predict_items_id = torch.IntTensor(item_list)
-        # if torch.cuda.is_available():
-        #     predict_users_id = predict_users_id.cuda()
-        #     predict_items_id = predict_items_id.cuda()
 
         user_emb = self.user_embedding(users_id)
         # item_emb = self.item_embedding(predict_items_id)

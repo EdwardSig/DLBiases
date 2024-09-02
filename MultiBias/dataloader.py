@@ -188,6 +188,7 @@ class MLImplicitBCELossDataLoader(BaseImplicitBCELossDataLoader):
     def __init__(self, dataset_path: str, file_name: tuple, device: torch.device, has_item_pool_file: bool = False):
         super(MLImplicitBCELossDataLoader, self).__init__(dataset_path)
 
+        # train set and test set
         self.train_data_path: str = os.path.join(self.dataset_path, file_name[0])
         self.test_data_path: str = os.path.join(self.dataset_path, file_name[1])
 

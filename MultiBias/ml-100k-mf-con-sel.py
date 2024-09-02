@@ -105,6 +105,7 @@ def main(
         top_k_list=evaluate_config['top_k_list'],
         use_item_pool=False)
 
+    # bias labels 
     pop_env_label = torch.LongTensor(data_loader.train_df['con_label'].tolist())
     con_env_label = torch.LongTensor(data_loader.train_df['sel_label'].tolist())
 
