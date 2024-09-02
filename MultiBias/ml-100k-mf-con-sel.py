@@ -13,6 +13,7 @@ from utils import merge_dict, _show_me_a_list_func, query_user, query_str, mkdir
 
 DEVICE: torch.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+# model parameter
 MODEL_CONFIG: dict = {
     'pop_env_num': 2,
     'con_env_num': 2,
@@ -24,6 +25,7 @@ MODEL_CONFIG: dict = {
     'reg_env_embed': False
 }
 
+# training parameter
 TRAIN_CONFIG: dict = {
     "batch_size": 512,
     "epochs": 300,
@@ -43,6 +45,7 @@ TRAIN_CONFIG: dict = {
     "stop_cluster_epoch": None
 }
 
+# testing metrics
 EVALUATE_CONFIG: dict = {
     'top_k_list': [20, 50],
     'test_batch_size': 1024,
@@ -97,6 +100,7 @@ def main(
         'items_tensor': test_tensor[:, 1],
     }
 
+    # This class is used to test method performance
     evaluator: ImplicitTestManager = ImplicitTestManager(
         model=model,
         data_loader=data_loader,
@@ -116,6 +120,7 @@ def main(
     env_classifier = np.concatenate((pop_env_classifier, con_env_classifier), axis=1)
     env_classifier = torch.FloatTensor(env_classifier)
 
+    # This class is used to control training of models
     train_manager: ExplicitTrainManager = ExplicitTrainManager(
         model=model,
         evaluator=evaluator,
