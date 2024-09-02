@@ -106,7 +106,7 @@ class ExplicitTrainManager:
         Returns:
 
         """
-
+        # output of DLBiases
         mf_score, env_aware_score, env_outputs = self.model(
             batch_users_tensor, batch_items_tensor, batch_envs_tensor, alpha
         )
@@ -419,7 +419,7 @@ class ExplicitTrainManagerNone:
         Returns:
 
         """
-
+        # output of original model
         predict_score = self.model(
             batch_users_tensor, batch_items_tensor)
 

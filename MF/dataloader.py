@@ -134,6 +134,7 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
     def __init__(self, dataset_path: str, file_name: tuple, device: torch.device, has_item_pool_file: bool = False):
         super(MLExplicitDataLoader, self).__init__(dataset_path)
 
+        # train set and test set
         self.train_data_path: str = os.path.join(self.dataset_path, file_name[0])
         self.test_data_path: str = os.path.join(self.dataset_path, file_name[1])
 
@@ -143,7 +144,7 @@ class MLExplicitDataLoader(BaseExplicitDataLoader):
         self._train_data: np.array = self.train_df.iloc[:, 0: 3].values.astype(np.int64)
         self._test_data: np.array = self.test_df.iloc[:, 0: 3].values.astype(np.int64)
 
-        self.user_positive_interaction = []
+        self.user_positive_interaction = []     # data in train set
         self.user_list: list = []
         self.item_list: list = []
 

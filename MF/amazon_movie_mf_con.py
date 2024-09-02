@@ -156,6 +156,7 @@ def main(
 
 
 if __name__ == '__main__':
+    # load data
     loader: MLExplicitDataLoader = MLExplicitDataLoader(
         dataset_path=global_config.CODE_OCEAN_DATASET_PATH + DATASET_PATH,
         file_name=['train.csv', 'test.csv'],
